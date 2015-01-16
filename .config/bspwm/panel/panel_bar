@@ -1,0 +1,87 @@
+#! /bin/sh
+
+source ~/.config/bspwm/panel/panel.cfg
+
+num_mon=$(bspc query -M | wc -l)
+
+function generate_workspaces {
+        declare -n wm_infos=$2
+        item=$1
+        name=${item#?}
+        case $item in
+            O*)
+                # focused occupied desktop
+                wm_infos="${wm_infos}%{F$FOCUSED_OCCUPIED_FG}%{B$FOCUSED_OCCUPIED_BG}%{U$FOCUSED_OCCUPIED_UL}%{+u} %{A:bspc desktop -f ${name}:}${name}%{A} %{-u}%{B-}%{F-}"
+                ;;
+            F*)
+                # focused free desktop
+                wm_infos="${wm_infos}%{F$FOCUSED_FREE_FG}%{U$FOCUSED_FREE_UL}%{B$FOCUSED_FREE_BG}%{+u} %{A:bspc desktop -f ${name}:}${name}%{A} %{-u}%{B-}%{F-}"
+                ;;
+            U*)
+                # focused urgent desktop
+                wm_infos="${wm_infos}%{F$FOCUSED_URGENT_FG}%{B$FOCUSED_URGENT_BG}%{U$FOREGROUND}%{+u} %{A:bspc desktop -f ${name}:}${name}%{A} %{-u}%{B-}%{F-}"
+                ;;
+            o*)
+                # occupied desktop
+                wm_infos="${wm_infos}%{F$OCCUPIED_FG}%{B$OCCUPIED_BG}%{U$OCCUPIED_UL}%{+u} %{A:bspc desktop -f ${name}:}${name}%{A} %{-u}%{B-}%{F-}"
+                ;;
+            f*)
+                # free desktop
+                wm_infos="${wm_infos}%{F$FREE_FG}%{B$FREE_BG} %{A:bspc desktop -f ${name}:}${name}%{A} %{B-}%{F-}"
+                ;;
+            u*)
+                # urgent desktop
+                wm_infos="${wm_infos}%{F$URGENT_FG}%{B$URGENT_BG} %{A:bspc desktop -f ${name}:}${name}%{A} %{B-}%{F-}"
+                ;;
+            L*)
+                # layout
+                wm_infos="$wm_infos  %{F$LAYOUT_FG}%{B$LAYOUT_BG}  %{B-}%{F-}"
+                ;;
+        esac
+}
+
+while read -r line ; do
+	case $line in
+        p*)
+            # set up mpd indicator
+            mpdinfo="${line#?}" ;;
+		c*)
+			# clock output
+			sys_infos="${line#?}"
+			;;
+        u*)
+            # set up update indicator
+            updates="${line#?}" 
+            ;;
+        v*)
+            # volume 
+            volume="${line#?}" 
+            ;;	
+        T*)
+			# xtitle output
+			title="${line#?}"
+			;;
+		w*)
+			# wifi output
+			wifi="${line#?}"
+			;;
+		W*)
+			# bspwm internal state
+            IFS=':'
+            set -- ${line#?}
+            # Workspaces 1 - 5 -> Mon 1
+            unset wm_first_mon
+            while [ $# -gt 6 ] ; do
+                generate_workspaces $1 wm_first_mon
+                shift
+            done
+            # Workspaces 6 - 10 -> Mon 2
+            unset wm_sec_mon
+            while [ $# -gt 0 ] ; do
+                generate_workspaces $1 wm_sec_mon
+                shift
+            done
+            ;;
+	esac
+	printf "%s\n" "$wm_first_mon %{r} $mpdinfo ⮞ %{F#FF${BOLD_WHITE}}$volume% %{F-} | $updates | $sys_infos %{S+}%{l} $wm_sec_mon %{r}  %{c} | %{F#FF${BLUE}} ⮗ $title | %{r}%{F-} ⮷ $wifi | $sys_infos "
+done

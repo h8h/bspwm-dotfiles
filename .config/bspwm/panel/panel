@@ -1,0 +1,66 @@
+#!/bin/sh
+
+source ~/.config/bspwm/panel/panel.cfg
+
+if [ $(pgrep -cx panel) -gt 1 ] ; then
+	printf "%s\n" "The panel is already running." >&2
+	exit 1
+fi
+
+trap 'trap - TERM; kill 0' INT TERM QUIT EXIT
+
+trayer --edge top --align center --widthtype requested --heighttype pixel --height $BARHEIGHT --tint 0x$BLACK --transparent true --alpha 0 &
+
+[ -e "$PANEL_FIFO" ] && rm "$PANEL_FIFO"
+mkfifo "$PANEL_FIFO"
+
+bspc config top_padding $PANEL_HEIGHT
+bspc control --subscribe > "$PANEL_FIFO" &
+
+xtitle -sf 'T%s' > "$PANEL_FIFO" &
+
+ # date & time
+ while true; do
+     date +"c%A %x | %H:%M:%S"
+     sleep 1
+     done > "$PANEL_FIFO" &
+
+ # update checking
+ while true; do
+     echo "u$(checkupdates | wc -l) updates"
+     sleep 3600
+     done > "$PANEL_FIFO" &
+
+ # mpd info
+ while true; do
+    [[ -z "$(pidof mpd)" ]] && { echo "p ⮕  mpd is not running |"; sleep 1; continue; }
+    [[ "$(printf "status\nclose\n" | curl --connect-timeout 1 -fsm 3 telnet://localhost:6600 | grep state:)" = "state: pause" ]] && { echo "p ⮔  |"; sleep 1; continue; }
+    [[ "$(printf "status\nclose\n" | curl --connect-timeout 1 -fsm 3 telnet://localhost:6600 | grep state:)" = "state: stop" ]] && { echo "p "; sleep 1; continue; }
+    echo "p ⮓ now playing: $(mpc current -f %artist%) > $(mpc current -f %title%) $(mpc | sed -n 2p | awk '{ print $3 }') |" | tr '[:upper:]' '[:lower:]'
+    sleep .6
+    done > "$PANEL_FIFO" &
+
+ while true; do
+    dev="Master"
+    if ! amixer get $dev | egrep Left &>/dev/null; then
+        x=$(amixer get $dev | egrep -o "[0-9]+%")
+    else
+        l=$(amixer get $dev | grep Left | egrep -o "[0-9]+%" | sed s/\%//)
+        r=$(amixer get $dev | grep Right | egrep -o "[0-9]+%" | sed s/\%//)
+        x=$(($(($l + $r)) / 2))
+    fi
+    echo "v${x}%"
+    sleep .6
+    done > "$PANEL_FIFO" &
+
+ while true; do
+    interface=$WIFI_DEV
+    BitRate=`iwconfig $interface | grep 'Bit Rate=' | awk '{gsub(/[=/]/," "); print $3}'`
+    ESSID=`iwconfig $interface | iwconfig wlp0s2f1u1 | grep "ESSID:" | awk '{gsub(/[:"]/," "); print $5}'`
+    echo "w$ESSID - $BitRate Mb/s"
+    sleep 300
+    done > "$PANEL_FIFO" &
+
+cat "$PANEL_FIFO" | ~/.config/bspwm/panel/panel_bar | bar -g ${BARWIDTH}x${BARHEIGHT}+${EDGEWIDTH} -f "$PANEL_FONT_FAMILY" -F "$FOREGROUND" -B "$BACKGROUND" -u "$UNDERLINE_WIDTH" | while read line; do eval "$line"; done &
+
+wait
