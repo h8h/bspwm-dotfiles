@@ -104,9 +104,15 @@ alt + l
     i3lock -p win -c 000000 -i ~/pics/nsa.png -t
 
 XF86AudioRaiseVolume
-    mpc next
+    pactl set-sink-volume 0 -- +5%
 
 XF86AudioLowerVolume
+    pactl set-sink-volume 0 -- -5%
+
+super + XF86AudioRaiseVolume
+    mpc next
+
+super + XF86AudioLowerVolume
     mpc prev
 
 XF86AudioMute
