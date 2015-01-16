@@ -16,3 +16,4 @@ Dependencies (Arch Linux)
 Here's What It Looks Like
 -------------------------
 ![No Pic sry!](https://raw.github.com/h8h/bspwm-dotfiles/master/screenshot.png "SCREENSHOT")
+By the way the panel has mouse-support so you can click on the workspace to switch to it.
