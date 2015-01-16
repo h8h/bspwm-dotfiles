@@ -34,9 +34,9 @@ xtitle -sf 'T%s' > "$PANEL_FIFO" &
  # mpd info
  while true; do
     [[ -z "$(pidof mpd)" ]] && { echo "p ⮕  mpd is not running |"; sleep 1; continue; }
-    [[ "$(printf "status\nclose\n" | curl --connect-timeout 1 -fsm 3 telnet://localhost:6600 | grep state:)" = "state: pause" ]] && { echo "p ⮔  |"; sleep 1; continue; }
+    [[ "$(printf "status\nclose\n" | curl --connect-timeout 1 -fsm 3 telnet://localhost:6600 | grep state:)" = "state: pause" ]] && { echo "p ⮔"; sleep 1; continue; }
     [[ "$(printf "status\nclose\n" | curl --connect-timeout 1 -fsm 3 telnet://localhost:6600 | grep state:)" = "state: stop" ]] && { echo "p "; sleep 1; continue; }
-    echo "p ⮓ now playing: $(mpc current -f %artist%) > $(mpc current -f %title%) $(mpc | sed -n 2p | awk '{ print $3 }') |" | tr '[:upper:]' '[:lower:]'
+    printf "p%s\n" "⮓ now playing: $(mpc current -f %artist%) > $(mpc current -f %title%) $(mpc | sed -n 2p | awk '{ print $3 }')" | tr '[:upper:]' '[:lower:]'
     sleep .6
     done > "$PANEL_FIFO" &
 
@@ -49,14 +49,19 @@ xtitle -sf 'T%s' > "$PANEL_FIFO" &
         r=$(amixer get $dev | grep Right | egrep -o "[0-9]+%" | sed s/\%//)
         x=$(($(($l + $r)) / 2))
     fi
-    echo "v${x}%"
+    if [ "$(pacmd list-sinks|grep -A 15 '* index'|awk '/muted:/{ print $2 }')" = "yes" ]; then
+        icon="⮝"
+    else
+        icon="⮞"
+    fi
+    printf "v%s\n" "$icon %{F#FF${BOLD_WHITE}}${x}%%%{F-}"
     sleep .6
     done > "$PANEL_FIFO" &
 
  while true; do
     interface=$WIFI_DEV
     BitRate=`iwconfig $interface | grep 'Bit Rate=' | awk '{gsub(/[=/]/," "); print $3}'`
-    ESSID=`iwconfig $interface | iwconfig wlp0s2f1u1 | grep "ESSID:" | awk '{gsub(/[:"]/," "); print $5}'`
+    ESSID=`iwconfig $interface | grep "ESSID:" | awk '{gsub(/[:"]/," "); print $5}'`
     echo "w$ESSID - $BitRate Mb/s"
     sleep 300
     done > "$PANEL_FIFO" &
