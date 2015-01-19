@@ -2,8 +2,6 @@
 
 source ~/.config/bspwm/panel/panel.cfg
 
-num_mon=$(bspc query -M | wc -l)
-
 function generate_workspaces {
         declare -n wm_infos=$2
         item=$1
@@ -41,32 +39,33 @@ function generate_workspaces {
 }
 
 while read -r line ; do
-	case $line in
+    case $line in
         p*)
             # set up mpd indicator
-            mpdinfo="${line#?}" ;;
-		c*)
-			# clock output
-			sys_infos="${line#?}"
-			;;
+            mpdinfo="${line#?}"
+            ;;
+        c*)
+            # clock output
+            sys_infos="${line#?}"
+            ;;
         u*)
             # set up update indicator
-            updates="${line#?}" 
+            updates="${line#?}"
             ;;
         v*)
             # volume 
-            volume="${line#?}" 
-            ;;	
+            volume="${line#?}"
+            ;;
         T*)
-			# xtitle output
-			title="${line#?}"
-			;;
-		w*)
-			# wifi output
-			wifi="${line#?}"
-			;;
-		W*)
-			# bspwm internal state
+            # xtitle output
+            title="${line#?}"
+            ;;
+        w*)
+            # wifi output
+            wifi="${line#?}"
+            ;;
+        W*)
+            # bspwm internal state
             IFS=':'
             set -- ${line#?}
             # Workspaces 1 - 5 -> Mon 1
@@ -82,6 +81,6 @@ while read -r line ; do
                 shift
             done
             ;;
-	esac
-	printf "%s\n" "$wm_first_mon %{r} $mpdinfo | $volume | $updates | $sys_infos %{S+}%{l} $wm_sec_mon %{r}  %{c} | %{F#FF${BLUE}} ⮗ $title | %{r}%{F-} ⮷ $wifi | $sys_infos "
+    esac
+    printf "%s\n" "$wm_first_mon %{r} $mpdinfo | $volume | $updates | $sys_infos %{S+}%{l} $wm_sec_mon %{r}  %{c} | %{F#FF${BLUE}} ⮗ $title | %{r}%{F-} ⮷ $wifi | $sys_infos "
 done
